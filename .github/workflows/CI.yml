@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - compliance-checks-fix
 
 env:
   RUST_BACKTRACE: 1
@@ -16,9 +17,9 @@ jobs:
       - style
       - build
       - test
-      - doc
-      - lint
-      - fuzz
+      # - doc
+      # - lint
+      # - fuzz
     steps:
       - run: exit 0
 
@@ -99,79 +100,79 @@ jobs:
         with:
           command: test
 
-  doc:
-    name: Build docs
-    needs: [style, test]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v1
+  # doc:
+  #   name: Build docs
+  #   needs: [style, test]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v1
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: true
+  #     - name: Install Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         profile: minimal
+  #         toolchain: nightly
+  #         override: true
 
-      - name: cargo doc
-        uses: actions-rs/cargo@v1
-        with:
-          command: rustdoc
-          args: -p h3 -- -D intra-doc-link-resolution-failure
+  #     - name: cargo doc
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: rustdoc
+  #         args: -p h3 -- -D intra-doc-link-resolution-failure
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v1
+  # lint:
+  #   name: Lint
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v1
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: clippy
+  #     - name: Install Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         profile: minimal
+  #         toolchain: stable
+  #         override: true
+  #         components: clippy
 
-      - name: cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+  #     - name: cargo clippy
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: clippy
 
-  fuzz:
-    name: Fuzz test
-    needs: [style, test]
-    strategy:
-      matrix:
-        rust:
-          - nightly
+  # fuzz:
+  #   name: Fuzz test
+  #   needs: [style, test]
+  #   strategy:
+  #     matrix:
+  #       rust:
+  #         - nightly
 
-    runs-on: ubuntu-latest
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v1
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v1
 
-      - name: Install Rust (${{ matrix.rust }})
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
+  #     - name: Install Rust (${{ matrix.rust }})
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         profile: minimal
+  #         toolchain: ${{ matrix.rust }}
+  #         override: true
 
-      - name: install cargo-fuzz
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-fuzz
+  #     - name: install cargo-fuzz
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: install
+  #         args: cargo-fuzz
 
-      - name: Fuzz
-        uses: actions-rs/cargo@v1
-        with:
-          command: +nightly
-          args: fuzz run fuzz_varint -- -runs=1
+  #     - name: Fuzz
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: +nightly
+  #         args: fuzz run fuzz_varint -- -runs=1
 
   compliance:
     name: Check spec compliance
