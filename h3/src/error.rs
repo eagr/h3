@@ -364,6 +364,10 @@ impl From<frame::Error> for Error {
                 //# after the identified fields or a frame payload that terminates before
                 //# the end of the identified fields MUST be treated as a connection
                 //# error of type H3_FRAME_ERROR.
+
+                //= https://www.rfc-editor.org/rfc/rfc9114#section-7.1
+                //# In particular, redundant length
+                //# encodings MUST be verified to be self-consistent; see Section 10.8.
                 proto::frame::Error::Incomplete(_)
                 | proto::frame::Error::InvalidFrameValue
                 | proto::frame::Error::Malformed => Code::H3_FRAME_ERROR,
