@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use futures::future;
 use structopt::StructOpt;
@@ -12,6 +12,14 @@ static ALPN: &[u8] = b"h3";
 #[derive(StructOpt, Debug)]
 #[structopt(name = "server")]
 struct Opt {
+    #[structopt(
+        long,
+        short,
+        default_value = "examples/ca.cert",
+        help = "Certificate of CA who issues the server certificate"
+    )]
+    pub ca: PathBuf,
+
     #[structopt(name = "keylogfile", long)]
     pub key_log_file: bool,
 
@@ -47,11 +55,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .next()
         .ok_or("dns found no addresses")?;
 
-    info!("DNS Lookup for {:?}: {:?}", uri, addr);
+    info!("DNS lookup for {:?}: {:?}", uri, addr);
 
     // create quinn client endpoint
 
-    // load certificates stored in the system
+    // load CA certificates stored in the system
     let mut roots = rustls::RootCertStore::empty();
     match rustls_native_certs::load_native_certs() {
         Ok(certs) => {
@@ -65,6 +73,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             error!("couldn't load any default trust roots: {}", e);
         }
     };
+
+    // load certificate of CA who issues the server certificate
+    if let Err(e) = roots.add(&rustls::Certificate(std::fs::read(opt.ca)?)) {
+        error!("failed to parse trust anchor: {}", e);
+    }
 
     let mut tls_config = rustls::ClientConfig::builder()
         .with_safe_default_cipher_suites()
@@ -131,7 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("response: {:?} {}", resp.version(), resp.status());
         info!("headers: {:#?}", resp.headers());
 
-        // `recv_data()` should be called after `recv_response()` for
+        // `recv_data()` must be called after `recv_response()` for
         // receiving potential response body
         while let Some(mut chunk) = stream.recv_data().await? {
             let mut out = tokio::io::stdout();

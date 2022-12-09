@@ -8,7 +8,7 @@ struct ChildGuard(Child);
 impl Drop for ChildGuard {
     fn drop(&mut self) {
         if std::thread::panicking() {
-            println!("Cleaning up while unwinding");
+            println!("Cleaning up child process while unwinding");
             if let Err(e) = self.0.kill() {
                 println!("Failed to kill child process: {}", e);
             }
@@ -24,8 +24,8 @@ fn server_and_client_should_connect_successfully() {
 
     let server = Command::new(command.as_path())
         .arg("--listen=[::]:4433")
-        .arg("--cert=../examples/cert.crt")
-        .arg("--key=../examples/cert.key")
+        .arg("--cert=../examples/server.cert")
+        .arg("--key=../examples/server.key")
         .spawn()
         .expect("Failed to run server example");
 
@@ -35,9 +35,11 @@ fn server_and_client_should_connect_successfully() {
 
     command.pop();
     command.push("client");
+
     assert!(
         Command::new(command)
-            .args(["https://localhost:4433"])
+            .arg("https://localhost:4433")
+            .arg("--ca=../examples/ca.cert")
             .stderr(Stdio::null())
             .status()
             .expect("Failed to run client example")
