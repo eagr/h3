@@ -1,7 +1,20 @@
 use std::{
     path::PathBuf,
-    process::{Command, Stdio},
+    process::{Child, Command, Stdio},
 };
+
+struct ChildGuard(Child);
+
+impl Drop for ChildGuard {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            println!("Cleaning up while unwinding");
+            if let Err(e) = self.0.kill() {
+                println!("Failed to kill child process: {}", e);
+            }
+        }
+    }
+}
 
 #[test]
 fn server_and_client_should_connect_successfully() {
@@ -9,13 +22,16 @@ fn server_and_client_should_connect_successfully() {
     let mut command = PathBuf::from(std::env!("CARGO_MANIFEST_DIR"));
     command.push("../target/debug/examples/server");
 
-    let mut server = Command::new(command.as_path())
+    let server = Command::new(command.as_path())
         .arg("--listen=[::]:4433")
         .arg("--cert=../examples/cert.crt")
         .arg("--key=../examples/cert.key")
         .spawn()
         .expect("Failed to run server example");
-    assert!(server.stderr.is_none(), "Failed to listen on localhost");
+
+    let mut server = ChildGuard(server);
+
+    assert!(server.0.stderr.is_none(), "Failed to listen on localhost");
 
     command.pop();
     command.push("client");
@@ -29,5 +45,5 @@ fn server_and_client_should_connect_successfully() {
         "Failed to connect to server"
     );
 
-    server.kill().expect("Failed to terminate server");
+    server.0.kill().expect("Failed to terminate server");
 }
