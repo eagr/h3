@@ -30,7 +30,7 @@ async fn graceful_shutdown_grace_interval() {
     let mut pair = Pair::default();
     let mut server = pair.server();
 
-    let client_fut = async {};
+    // let client_fut = async {};
 
     let server_fut = async {
         let conn = server.next().await;
@@ -49,7 +49,7 @@ async fn graceful_shutdown_grace_interval() {
         tokio::time::sleep(Duration::from_millis(50)).await;
     };
 
-    tokio::join!(server_fut, client_fut);
+    // tokio::join!(server_fut, client_fut);
 }
 
 async fn request<T, O, B>(mut send_request: T) -> Result<Response<()>, Error>
